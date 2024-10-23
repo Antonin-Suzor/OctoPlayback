@@ -7,7 +7,9 @@
     let playing = false;
     let currentPlaylist: Playlist;
     let currentTrack: Track;
-    let currentTwinNumber = 0; //TODO: change the song when the twin number changes
+    let currentTwinNumber = 0;
+    let volumeSlider: HTMLInputElement;
+    let currentVolume = 80;
 
     let hasConfig = false;
     let config: Config;
@@ -43,7 +45,6 @@
     }
 
     async function playPlaylist(name: string): Promise<void> {
-        // TODO: play the whole playlist, not just the first track
         const playlist = config.playlists.find(playlist => playlist.name === name) as Playlist;
         const firstTrackName = playlist.trackNameList.at(0);
         const firstTrack = config.tracks.find(track => track.name === firstTrackName) as Track;
@@ -51,12 +52,37 @@
         currentPlaylist = playlist;
         currentTrack = firstTrack;
     }
+
+    function playPause() {
+        if (!audio) {
+            return;
+        }
+        if (audio.paused) {
+            audio.play();
+            playing = true;
+        }
+        else {
+            audio.pause();
+            playing = false;
+        }
+    }
+    function restartTrack() {
+        if (!audio) {
+            return;
+        }
+        audio.currentTime = 0;
+    }
+    function changeVolume() {
+        let newVolume = Number.parseInt(volumeSlider.value) / 100;
+        currentVolume = newVolume;
+        audio.volume = newVolume;
+    }
 </script>
 
 <body>
     <h1>OctoPlayback</h1>
     <p>A loop-based music player with Octopath Traveler OST in mind</p>
-    <input bind:this={fileInput} accept=".json" type="file" on:change={loadConfigFile}>
+    <input bind:this={fileInput} accept=".json" type="file" on:change={loadConfigFile} />
     {#if !hasConfig}
         <h2>It seems that you have not loaded a config file.</h2>
     {:else}
@@ -65,7 +91,7 @@
             Twin selection:
             {#each {length: maxTwinCount} as _, i}
             <label>
-                <input type="radio" name="currentTwinNumber" value={i} bind:group={currentTwinNumber}>
+                <input type="radio" name="currentTwinNumber" value={i} bind:group={currentTwinNumber} />
                 {i + 1}
             </label>
             {/each}
@@ -73,7 +99,12 @@
         <audio bind:this={audio} controls>
             If you see this, some error has occurred when loading an audio file.
         </audio>
-        <button>{ playing ? 'Pause' : 'Play' }</button>
+        <div>
+            Track controls:
+            <button on:click={playPause}>{playing ? 'Playing' : 'Paused'}</button>
+            <button on:click={restartTrack}>Restart</button>
+            <input bind:this={volumeSlider} type="range" name="currentVolume" min="0" max="100" value="80" on:change={changeVolume} />
+        </div>
         <div><!-- horizontal break --></div>
         {#each currentGrid.playlistNameMatrix as playListNameList, i}
             <ol>
@@ -89,5 +120,8 @@
 <style>
     body {
         text-align: center;
+    }
+    * {
+        border: 1px solid gray;
     }
 </style>
