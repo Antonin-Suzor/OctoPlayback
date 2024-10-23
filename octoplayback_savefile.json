@@ -1,0 +1,64 @@
+{
+    "version": 1,
+    "maxTwinCount": 3,
+    "map": {
+        "startX": 0,
+        "startY": 0,
+        "gridNameMatrix": [
+            [
+                "grid_1"
+            ]
+        ]
+    },
+    "grids": [
+        {
+            "name": "grid_1",
+            "playlistNameMatrix": [
+                [
+                    "playlist_1",
+                    "playlist_2",
+                    "playlist_3"
+                ],
+                [
+                    "playlist_2"
+                ],
+                [
+                    "playlist_2",
+                    "playlist_2",
+                    "playlist_1"
+                ]
+            ]
+        }
+    ],
+    "playlists": [
+        {
+            "name": "playlist_1",
+            "trackNameList": [
+                "octo1_main"
+            ]
+        },
+        {
+            "name": "playlist_2",
+            "trackNameList": [
+                "octo2_main_night"
+            ]
+        },
+        {
+            "name": "playlist_3",
+            "trackNameList": [
+                "octo1_main",
+                "octo2_main_night"
+            ]
+        }
+    ],
+    "tracks": [
+        {
+            "name": "octo1_main",
+            "filepathTwins": ["C:/Users/anton/Music/octo1_main.mp3"]
+        },
+        {
+            "name": "octo2_main_night",
+            "filepathTwins": ["C:/Users/anton/Music/octo2_main_night.mp3"]
+        }
+    ]
+}

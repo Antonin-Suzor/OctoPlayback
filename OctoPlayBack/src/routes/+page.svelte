@@ -1,157 +1,93 @@
 <script lang="ts">
-  import { invoke } from "@tauri-apps/api/core";
+    import {convertFileSrc} from '@tauri-apps/api/core';
+    import type {Config, Grid, Playlist, Track} from './octoTypes';
+    import {getGridFromXY} from './logic';
 
-  let name = "";
-  let greetMsg = "";
+    let audio: HTMLAudioElement;
+    let playing = false;
+    let currentPlaylist: Playlist;
+    let currentTrack: Track;
+    let currentTwinNumber = 0; //TODO: change the song when the twin number changes
 
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
-    greetMsg = await invoke("greet", { name });
-  }
+    let hasConfig = false;
+    let config: Config;
+    let currentGrid: Grid;
+    let currentX: number;
+    let currentY: number;
+    let maxTwinCount: number;
+
+    let fileInput: HTMLInputElement;
+    function loadConfigFile() {
+        const file = fileInput.files?.[0];  // Get the first file
+
+        if (file) {
+            const fileReader = new FileReader();
+
+            // When the file will be read
+            fileReader.onload = () => {
+                try {
+                    config = JSON.parse(fileReader.result as string);
+                    maxTwinCount = config.maxTwinCount;
+                    currentX = config.map.startX;
+                    currentY = config.map.startY;
+                    currentGrid = getGridFromXY(config, currentX, currentY);
+                    hasConfig = true;
+                } catch (error) {
+                    hasConfig = false;
+                }
+            };
+
+            // Read the file as text
+            fileReader.readAsText(file);
+        }
+    }
+
+    async function playPlaylist(name: string): Promise<void> {
+        // TODO: play the whole playlist, not just the first track
+        const playlist = config.playlists.find(playlist => playlist.name === name) as Playlist;
+        const firstTrackName = playlist.trackNameList.at(0);
+        const firstTrack = config.tracks.find(track => track.name === firstTrackName) as Track;
+        audio.src = convertFileSrc(firstTrack.filepathTwins[currentTwinNumber]);
+        currentPlaylist = playlist;
+        currentTrack = firstTrack;
+    }
 </script>
 
-<div class="container">
-  <h1>Welcome to Tauri!</h1>
-
-  <div class="row">
-    <a href="https://vitejs.dev" target="_blank">
-      <img src="/vite.svg" class="logo vite" alt="Vite Logo" />
-    </a>
-    <a href="https://tauri.app" target="_blank">
-      <img src="/tauri.svg" class="logo tauri" alt="Tauri Logo" />
-    </a>
-    <a href="https://kit.svelte.dev" target="_blank">
-      <img src="/svelte.svg" class="logo svelte-kit" alt="SvelteKit Logo" />
-    </a>
-  </div>
-
-  <p>Click on the Tauri, Vite, and SvelteKit logos to learn more.</p>
-
-  <form class="row" on:submit|preventDefault={greet}>
-    <input id="greet-input" placeholder="Enter a name..." bind:value={name} />
-    <button type="submit">Greet</button>
-  </form>
-
-  <p>{greetMsg}</p>
-</div>
+<body>
+    <h1>OctoPlayback</h1>
+    <p>A loop-based music player with Octopath Traveler OST in mind</p>
+    <input bind:this={fileInput} accept=".json" type="file" on:change={loadConfigFile}>
+    {#if !hasConfig}
+        <h2>It seems that you have not loaded a config file.</h2>
+    {:else}
+        <div><!-- horizontal break --></div>
+        {#if maxTwinCount > 1}
+            Twin selection:
+            {#each {length: maxTwinCount} as _, i}
+            <label>
+                <input type="radio" name="currentTwinNumber" value={i} bind:group={currentTwinNumber}>
+                {i + 1}
+            </label>
+            {/each}
+        {/if}
+        <audio bind:this={audio} controls>
+            If you see this, some error has occurred when loading an audio file.
+        </audio>
+        <button>{ playing ? 'Pause' : 'Play' }</button>
+        <div><!-- horizontal break --></div>
+        {#each currentGrid.playlistNameMatrix as playListNameList, i}
+            <ol>
+                Matrix line {i}
+                {#each playListNameList as playlistName, j}
+                    <li>Line item {j} <button on:click={() => playPlaylist(playlistName)}>Playlist: {playlistName}</button></li>
+                {/each}
+            </ol>
+        {/each}
+    {/if}
+</body>
 
 <style>
-.logo.vite:hover {
-  filter: drop-shadow(0 0 2em #747bff);
-}
-
-.logo.svelte-kit:hover {
-  filter: drop-shadow(0 0 2em #ff3e00);
-}
-
-:root {
-  font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
-  font-size: 16px;
-  line-height: 24px;
-  font-weight: 400;
-
-  color: #0f0f0f;
-  background-color: #f6f6f6;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  -webkit-text-size-adjust: 100%;
-}
-
-.container {
-  margin: 0;
-  padding-top: 10vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  text-align: center;
-}
-
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: 0.75s;
-}
-
-.logo.tauri:hover {
-  filter: drop-shadow(0 0 2em #24c8db);
-}
-
-.row {
-  display: flex;
-  justify-content: center;
-}
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-
-a:hover {
-  color: #535bf2;
-}
-
-h1 {
-  text-align: center;
-}
-
-input,
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  color: #0f0f0f;
-  background-color: #ffffff;
-  transition: border-color 0.25s;
-  box-shadow: 0 2px 2px rgba(0, 0, 0, 0.2);
-}
-
-button {
-  cursor: pointer;
-}
-
-button:hover {
-  border-color: #396cd8;
-}
-button:active {
-  border-color: #396cd8;
-  background-color: #e8e8e8;
-}
-
-input,
-button {
-  outline: none;
-}
-
-#greet-input {
-  margin-right: 5px;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    color: #f6f6f6;
-    background-color: #2f2f2f;
-  }
-
-  a:hover {
-    color: #24c8db;
-  }
-
-  input,
-  button {
-    color: #ffffff;
-    background-color: #0f0f0f98;
-  }
-  button:active {
-    background-color: #0f0f0f69;
-  }
-}
-
+    body {
+        text-align: center;
+    }
 </style>
